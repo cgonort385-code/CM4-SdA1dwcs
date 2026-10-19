@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aventura del Cuerpo Humano - Adaptación DUA</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Open+Dyslexic&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Fredoka', 'Comic Sans MS', sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .font-dyslexic {
+      font-family: 'OpenDyslexic', 'Fredoka', sans-serif !important;
+    }
+
+    /* Animaciones y Efectos Visuales */
+    .bounce-subtle {
+      animation: bounce 2s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .pulse-glow {
+      animation: pulseGlow 1.5s infinite alternate;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+      100% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.9); }
+    }
+
+    .card-interactive {
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .card-interactive:hover {
+      transform: translateY(-4px) scale(1.02);
+    }
+    .card-interactive:active {
+      transform: translateY(2px) scale(0.98);
+    }
+
+    /* Ocultar elementos no imprimibles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-report, #printable-report * {
+        visibility: visible;
+      }
+      #printable-report {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: white;
+        color: black;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden">
+
+  <!-- CABECERA ACCESIBLE CON BARRA DE PROGRESO Y CONTROLES DUA -->
+  <header class="bg-white/90 backdrop-blur-md shadow-md sticky top-0 z-40 px-4 py-3 border-b-4 border-yellow-400">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Logo y Avatar del Alumno -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="showWelcomeScreen()">
+        <div id="header-avatar" class="text-4xl bg-yellow-100 p-2 rounded-full border-2 border-yellow-400 shadow-sm">
+          🚀
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-bold text-indigo-700 leading-tight">AVENTURA DEL CUERPO</h1>
+          <p id="header-student-name" class="text-xs md:text-sm font-semibold text-slate-600">Explorador/a: <span class="text-indigo-600">¡Hola!</span></p>
+          <p class="text-[10px] md:text-xs font-bold text-indigo-500">Creado por: Carlos H. GO (profesaurio)</p>
+        </div>
+      </div>
+
+      <!-- Barra de Progreso y Marcador de Estrellas -->
+      <div id="progress-container" class="hidden flex-1 max-w-xs mx-auto md:mx-4">
+        <div class="flex justify-between items-center text-xs font-bold text-slate-600 mb-1">
+          <span id="block-tag">BLOQUE 1 DE 5</span>
+          <span id="progress-text">Pregunta 1/25</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-4 border-2 border-slate-300 overflow-hidden">
+          <div id="progress-bar" class="bg-gradient-to-r from-emerald-400 to-green-500 h-full w-0 transition-all duration-500 rounded-full"></div>
+        </div>
+      </div>
+
+      <!-- Panel de Estrellas y Herramientas DUA -->
+      <div class="flex items-center gap-2">
+        <div class="flex items-center bg-amber-100 px-3 py-1.5 rounded-full border-2 border-amber-300 font-bold text-amber-700 shadow-sm">
+          <span class="text-2xl mr-1">⭐</span>
+          <span id="star-count" class="text-xl">0</span>
+        </div>
+
+        <!-- Botón Lectura Pregunta Actual -->
+        <button id="btn-read-screen" onclick="readCurrentQuestion()" title="Escuchar la pregunta actual" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2.5 rounded-full shadow-lg border-2 border-indigo-400 active:scale-95 transition-all flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+        </button>
+
+        <!-- Botón Informe Docente -->
+        <button onclick="showReportModal()" title="Informe Pedagógico DUA" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl font-bold text-sm shadow-md border-2 border-emerald-400 flex items-center gap-1 active:scale-95 transition-all">
+          <span>📋</span> <span class="hidden sm:inline">INFORME</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL RECONFIGURABLE -->
+  <main id="main-content" class="max-w-4xl mx-auto p-4 md:p-6 flex-1 w-full flex flex-col justify-center items-center">
+    <!-- El contenido se inyecta dinámicamente mediante JS -->
+  </main>
+
+  <!-- PIE DE PÁGINA ADAPTADO -->
+  <footer class="bg-slate-800 text-slate-300 py-3 px-4 text-center text-xs border-t-4 border-indigo-500 no-print">
+    <p class="font-semibold">CEIP Andalucía • 2º Educación Primaria • Área de Conocimiento del Medio Natural, Social y Cultural</p>
+    <p class="text-slate-400 mt-0.5">Adaptación DUA (LOMLOE) - Criterio de Evaluación 2.1 | Creado por: <span class="text-yellow-400 font-bold">Carlos H. GO (profesaurio)</span></p>
+  </footer>
+
+  <!-- MODAL DE INFORME DOCENTE DUA -->
+  <div id="report-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-4 border-indigo-500 p-6 flex flex-col">
+      
+      <div id="printable-report">
+        <!-- Encabezado del Informe -->
+        <div class="border-b-2 border-slate-200 pb-4 mb-4 flex justify-between items-start">
+          <div>
+            <h2 class="text-2xl font-bold text-indigo-900">INFORME DE EVALUACIÓN CUALITATIVA DUA</h2>
+            <p class="text-sm font-bold text-slate-600">LOMLOE - Decreto 101/2023 (Andalucía) | 2º Educ. Primaria</p>
+            <p class="text-xs text-slate-500">Conocimiento del Medio Natural, Social y Cultural</p>
+            <p class="text-xs font-bold text-indigo-600 mt-1">Autoría/Diseño: Carlos H. GO (profesaurio)</p>
+          </div>
+          <div class="text-right">
+            <span id="report-date" class="text-xs font-semibold text-slate-500">--/--/----</span>
+            <div class="mt-1 bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full font-bold text-xs">
+              Adaptación Significativa
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos del Alumno -->
+        <div class="bg-slate-50 p-4 rounded-2xl mb-4 border border-slate-200 grid grid-cols-2 gap-3 text-sm">
+          <div><strong>Alumno/a:</strong> <span id="report-student-name">---</span></div>
+          <div><strong>Desfase Curricular:</strong> &gt; 2 Cursos</div>
+          <div><strong>Aciertos Totales:</strong> <span id="report-score">0</span> / 25</div>
+          <div><strong>Intentos Totales:</strong> <span id="report-attempts">0</span></div>
+          <div><strong>Uso de Lectura por Voz:</strong> <span id="report-tts-uses">0</span> veces</div>
+          <div><strong>Nivel de Autonomía:</strong> <span id="report-autonomy">Alto</span></div>
+        </div>
+
+        <!-- Mapeo Curricular -->
+        <div class="mb-4 text-xs bg-amber-50 p-3 rounded-xl border border-amber-200">
+          <p class="font-bold text-amber-900 mb-1">Competencia Específica 2 &amp; Criterio de Evaluación 2.1:</p>
+          <p class="text-amber-800">
+            "Reconocer las partes del cuerpo humano, las funciones vitales, los órganos de los sentidos, el sistema nervioso, el aparato locomotor, los aparatos de la nutrición y reproducción, manifestando hábitos saludables."
+          </p>
+        </div>
+
+        <!-- Dictamen / Veredicto Pedagógico -->
+        <div class="mb-4">
+          <h3 class="font-bold text-slate-700 text-sm mb-2">GRADO DE CONSECUCIÓN DEL CRITERIO:</h3>
+          <div id="report-status-badge" class="p-3 rounded-2xl text-center font-bold text-lg border-2">
+            Cargando...
+          </div>
+        </div>
+
+        <!-- Desglose por los 5 Bloques Temáticos -->
+        <div class="mb-4">
+          <h3 class="font-bold text-slate-700 text-sm mb-2">DESGLOSE POR BLOQUES TEMÁTICOS (5 PREGUNTAS CADA UNO):</h3>
+          <ul id="report-blocks-list" class="space-y-2 text-xs">
+            <!-- Inyectado por JS -->
+          </ul>
+        </div>
+
+        <!-- Recomendaciones DUA para el Equipo Docente -->
+        <div class="bg-indigo-50 p-3 rounded-2xl border border-indigo-200 text-xs">
+          <h4 class="font-bold text-indigo-900 mb-1">💡 ORIENTACIONES METODOLÓGICAS Y DUA SUGERIDAS:</h4>
+          <ul class="list-disc list-inside text-indigo-800 space-y-1">
+            <li>Priorizar la presentación bimodal (pictograma + síntesis de voz activa) en todas las tareas lectoescritoras.</li>
+            <li>Reforzar de forma manipulatual los aparatos de la nutrición y el esquema corporal.</li>
+            <li>Permitir tiempos prolongados de respuesta y utilizar la autoevaluación guiada con refuerzos positivos inmediatos.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Acciones del Modal -->
+      <div class="mt-6 flex flex-wrap justify-end gap-3 no-print pt-4 border-t border-slate-200">
+        <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow flex items-center gap-1">
+          <span>🖨️</span> Imprimir Informe / Guardar PDF
+        </button>
+        <button onclick="closeReportModal()" class="bg-slate-300 hover:bg-slate-400 text-slate-800 px-4 py-2 rounded-xl font-bold text-sm">
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LÓGICA INTERACTIVA Y DUA -->
+  <script>
+    /* ==========================================================================
+       1. ESTADO DE LA APLICACIÓN Y BASE DE DATOS DE 25 PREGUNTAS DUA
+       ========================================================================== */
+    const gameState = {
+      studentName: 'Explorador/a',
+      avatar: '🚀',
+      currentQuestionIndex: 0,
+      stars: 0,
+      totalAttempts: 0,
+      ttsUses: 0,
+      // Registro detallado de aciertos por bloque
+      blockScores: [0, 0, 0, 0, 0], // Bloques 1 a 5
+      questionResults: Array(25).fill(null).map(() => ({ completed: false, attempts: 0 }))
+    };
+
+    /* BANCO COMPLETO DE 25 PREGUNTAS ORGANIZADAS EN 5 BLOQUES */
+    const questionsDatabase = [
+      // ------------------------------------------------------------------------
+      // BLOQUE 1: LAS TRES FUNCIONES VITALES (Preguntas 1 a 5)
+      // ------------------------------------------------------------------------
+      {
+        blockId: 1,
+        blockName: "1. Las Tres Funciones Vitales",
+        questionPictogram: "🍎 ➡️ ⚡",
+        questionText: "¿Qué función nos permite COMER y conseguir ENERGÍA para vivir?",
+        voiceText: "Bloque 1. Pregunta 1. ¿Qué función nos permite comer y conseguir energía para vivir?",
+        hint: "Piensa en cuando tienes hambre y comes una manzana deliciosa.",
+        options: [
+          { text: "NUTRICIÓN", picto: "🍎", correct: true, feedback: "¡Muy bien! La nutrición nos da energía mediante la comida." },
+          { text: "RELACIÓN", picto: "👀", correct: false, feedback: "La relación sirve para sentir el entorno con los sentidos. ¡Prueba otra vez!" },
+          { text: "REPRODUCCIÓN", picto: "👶", correct: false, feedback: "La reproducción es para tener bebés. ¡Inténtalo de nuevo!" }
+        ]
+      },
+      {
+        blockId: 1,
+        blockName: "1. Las Tres Funciones Vitales",
+        questionPictogram: "👀 👂 🤝",
+        questionText: "¿Qué función nos sirve para SENTIR lo que pasa a nuestro alrededor?",
+        voiceText: "Bloque 1. Pregunta 2. ¿Qué función nos sirve para sentir lo que pasa a nuestro alrededor?",
+        hint: "Usamos los ojos, oídos y manos para comunicarnos.",
+        options: [
+          { text: "RELACIÓN", picto: "🤝", correct: true, feedback: "¡Excelente! La función de relación nos conecta con el mundo." },
+          { text: "NUTRICIÓN", picto: "🥖", correct: false, feedback: "La nutrición es para comer y beber. ¡Elige otra!" },
+          { text: "DORMIR", picto: "😴", correct: false, feedback: "Dormir es un hábito de descanso, no una función vital. ¡Prueba otra vez!" }
+        ]
+      },
+      {
+        blockId: 1,
+        blockName: "1. Las Tres Funciones Vitales",
+        questionPictogram: "👨‍👩‍👧 👶",
+        questionText: "¿Qué función permite a los seres vivos tener HIJOS o descendientes?",
+        voiceText: "Bloque 1. Pregunta 3. ¿Qué función permite a los seres vivos tener hijos o descendientes?",
+        hint: "Gracias a esta función nacen nuevos bebés en las familias.",
+        options: [
+          { text: "REPRODUCCIÓN", picto: "👶", correct: true, feedback: "¡Correcto! La función de reproducción permite tener hijos." },
+          { text: "DIGESTIÓN", picto: "🥪", correct: false, feedback: "La digestión es para procesar alimentos en el estómago. ¡Prueba de nuevo!" },
+          { text: "RESPIRACIÓN", picto: "🫁", correct: false, feedback: "La respiración toma aire para los pulmones. ¡Prueba otra respuesta!" }
+        ]
+      },
+      {
+        blockId: 1,
+        blockName: "1. Las Tres Funciones Vitales",
+        questionPictogram: "💧 🍎 🍌",
+        questionText: "Para la función de NUTRICIÓN, ¿qué necesitamos tomar todos los días?",
+        voiceText: "Bloque 1. Pregunta 4. Para la función de nutrición, ¿qué necesitamos tomar todos los días?",
+        hint: "Es lo que tomamos cuando tenemos hambre y sed.",
+        options: [
+          { text: "AGUA Y ALIMENTOS", picto: "🥗💧", correct: true, feedback: "¡Muy bien! El agua y la comida nos dan nutrientes." },
+          { text: "JUGUETES Y LIBROS", picto: "🧸📚", correct: false, feedback: "Eso es para jugar y aprender, no para alimentarnos. ¡Inténtalo de nuevo!" },
+          { text: "ROPA Y ZAPATOS", picto: "👟👕", correct: false, feedback: "La ropa nos viste pero no se come. ¡Busca la correcta!" }
+        ]
+      },
+      {
+        blockId: 1,
+        blockName: "1. Las Tres Funciones Vitales",
+        questionPictogram: "❓ 🟢 🟡 🔴",
+        questionText: "¿Cuántas son las FUNCIONES VITALES de los seres vivos?",
+        voiceText: "Bloque 1. Pregunta 5. ¿Cuántas son las funciones vitales de los seres vivos?",
+        hint: "Cuenta: Nutrición, Relación y Reproducción.",
+        options: [
+          { text: "TRES (3)", picto: "3️⃣", correct: true, feedback: "¡Genial! Son 3: Nutrición, Relación y Reproducción." },
+          { text: "DIEZ (10)", picto: "🔟", correct: false, feedback: "¡Son muchas menos! Cuenta con los dedos de una mano." },
+          { text: "UNA (1)", picto: "1️⃣", correct: false, feedback: "Hay más de una. ¡Recuerda las que hemos visto!" }
+        ]
+      },
+
+      // ------------------------------------------------------------------------
+      // BLOQUE 2: APARATOS DE LA NUTRICIÓN Y SUS PARTES (Preguntas 6 a 10)
+      // ------------------------------------------------------------------------
+      {
+        blockId: 2,
+        blockName: "2. Aparatos de la Nutrición",
+        questionPictogram: "🥪 ➡️ 🫄",
+        questionText: "¿Qué APARATO se encarga de digerir la COMIDA en tu estómago?",
+        voiceText: "Bloque 2. Pregunta 6. ¿Qué aparato se encarga de digerir la comida en tu estómago?",
+        hint: "Empieza en la boca, pasa por el estómago y va a los intestinos.",
+        options: [
+          { text: "APARATO DIGESTIVO", picto: "🥪", correct: true, feedback: "¡Excelente! El aparato digestivo transforma tus alimentos." },
+          { text: "APARATO RESPIRATORIO", picto: "🫁", correct: false, feedback: "El respiratorio usa los pulmones para el aire. ¡Inténtalo!" },
+          { text: "APARATO LOCOMOTOR", picto: "🦴", correct: false, feedback: "El locomotor es para moverte con los huesos. ¡Prueba otra opción!" }
+        ]
+      },
+      {
+        blockId: 2,
+        blockName: "2. Aparatos de la Nutrición",
+        questionPictogram: "💨 ➡️ 🫁",
+        questionText: "¿Qué ÓRGANOS principales usamos para RESPIRAR el aire?",
+        voiceText: "Bloque 2. Pregunta 7. ¿Qué órganos principales usamos para respirar el aire?",
+        hint: "Están en el pecho y se llenan de aire como dos globos.",
+        options: [
+          { text: "LOS PULMONES", picto: "🫁", correct: true, feedback: "¡Fantástico! Los pulmones toman el oxígeno del aire." },
+          { text: "EL ESTÓMAGO", picto: "🥩", correct: false, feedback: "El estómago recibe la comida, no el aire. ¡Prueba de nuevo!" },
+          { text: "LOS DIENTES", picto: "🦷", correct: false, feedback: "Los dientes muelen la comida en la boca. ¡Inténtalo!" }
+        ]
+      },
+      {
+        blockId: 2,
+        blockName: "2. Aparatos de la Nutrición",
+        questionPictogram: "❤️ 🩸 🔄",
+        questionText: "¿Qué órgano BOMBEA la SANGRE por todo el cuerpo sin parar?",
+        voiceText: "Bloque 2. Pregunta 8. ¿Qué órgano bombea la sangre por todo el cuerpo sin parar?",
+        hint: "Siente su latido en la parte izquierda de tu pecho: ¡Tuc-tuc!",
+        options: [
+          { text: "EL CORAZÓN", picto: "❤️", correct: true, feedback: "¡Súper! El corazón es el motor del aparato circulatorio." },
+          { text: "LOS HUESOS", picto: "🦴", correct: false, feedback: "Los huesos nos sostienen. ¡Busca el órgano que late!" },
+          { text: "LA LENGUA", picto: "👅", correct: false, feedback: "La lengua ayuda a saborear y hablar. ¡Prueba otra vez!" }
+        ]
+      },
+      {
+        blockId: 2,
+        blockName: "2. Aparatos de la Nutrición",
+        questionPictogram: "🚰 🟡 🧼",
+        questionText: "¿Qué APARATO limpia la sangre y expulsa el PÍS fuera del cuerpo?",
+        voiceText: "Bloque 2. Pregunta 9. ¿Qué aparato limpia la sangre y expulsa el pís fuera del cuerpo?",
+        hint: "Utiliza los riñones y la vejiga cuando vamos al baño.",
+        options: [
+          { text: "APARATO EXCRETOR", picto: "🚽", correct: true, feedback: "¡Correcto! El aparato excretor elimina los deshechos en forma de orina." },
+          { text: "APARATO REPRODUCTOR", picto: "👶", correct: false, feedback: "El reproductor sirve para tener bebés. ¡Intenta de nuevo!" },
+          { text: "SISTEMA NERVIOSO", picto: "🧠", correct: false, feedback: "El nervioso envía órdenes desde el cerebro. ¡Prueba otra opción!" }
+        ]
+      },
+      {
+        blockId: 2,
+        blockName: "2. Aparatos de la Nutrición",
+        questionPictogram: "👄 🦷 👅",
+        questionText: "¿Por dónde ENTRA la comida a nuestro aparato digestivo?",
+        voiceText: "Bloque 2. Pregunta 10. ¿Por dónde entra la comida a nuestro aparato digestivo?",
+        hint: "Donde usamos los dientes para masticar.",
+        options: [
+          { text: "LA BOCA", picto: "👄", correct: true, feedback: "¡Muy bien! La digestión empieza en la boca al masticar." },
+          { text: "LA NARIZ", picto: "👃", correct: false, feedback: "Por la nariz entra el aire para respirar. ¡Prueba otra!" },
+          { text: "LAS OREJAS", picto: "👂", correct: false, feedback: "Las orejas son para escuchar sonidos. ¡Inténtalo!" }
+        ]
+      },
+
+      // ------------------------------------------------------------------------
+      // BLOQUE 3: 5 SENTIDOS, SISTEMA NERVIOSO Y LOCOMOTOR (Preguntas 11 a 15)
+      // ------------------------------------------------------------------------
+      {
+        blockId: 3,
+        blockName: "3. Sentidos, Nervioso y Locomotor",
+        questionPictogram: "🧠 ⚡ 🏃",
+        questionText: "¿Cuál es el ÓRGANO JEFE que piensa y controla todo tu cuerpo?",
+        voiceText: "Bloque 3. Pregunta 11. ¿Cuál es el órgano jefe que piensa y controla todo tu cuerpo?",
+        hint: "Está dentro de la cabeza muy bien protegido.",
+        options: [
+          { text: "EL CEREBRO", picto: "🧠", correct: true, feedback: "¡Fantástico! El cerebro da las órdenes al sistema nervioso." },
+          { text: "LOS MÚSCULOS", picto: "💪", correct: false, feedback: "Los músculos se mueven pero obedecen al cerebro. ¡Inténtalo!" },
+          { text: "EL PIE", picto: "🦶", correct: false, feedback: "El pie nos ayuda a caminar. ¡Busca el jefe en la cabeza!" }
+        ]
+      },
+      {
+        blockId: 3,
+        blockName: "3. Sentidos, Nervioso y Locomotor",
+        questionPictogram: "👀 🎨 🌈",
+        questionText: "¿Qué SENTIDO usamos con los OJOS para ver los colores y formas?",
+        voiceText: "Bloque 3. Pregunta 12. ¿Qué sentido usamos con los ojos para ver los colores y formas?",
+        hint: "Gracias a él puedes ver esta pantalla y los colores.",
+        options: [
+          { text: "LA VISTA", picto: "👀", correct: true, feedback: "¡Perfecto! La vista funciona a través de los ojos." },
+          { text: "EL OÍDO", picto: "👂", correct: false, feedback: "El oído escucha los sonidos y la música. ¡Prueba de nuevo!" },
+          { text: "EL GUSTO", picto: "👅", correct: false, feedback: "El gusto saborea las comidas. ¡Intenta con la vista!" }
+        ]
+      },
+      {
+        blockId: 3,
+        blockName: "3. Sentidos, Nervioso y Locomotor",
+        questionPictogram: "🦴 💀 🧱",
+        questionText: "¿Qué elementos DUROS forman nuestro ESQUELETO y sostienen el cuerpo?",
+        voiceText: "Bloque 3. Pregunta 13. ¿Qué elementos duros forman nuestro esqueleto y sostienen el cuerpo?",
+        hint: "Son blancos, duros y si te caes hay que cuidarlos mucho.",
+        options: [
+          { text: "LOS HUESOS", picto: "🦴", correct: true, feedback: "¡Súper! Los 206 huesos sostienen y protegen tu cuerpo." },
+          { text: "LOS MÚSCULOS", picto: "💪", correct: false, feedback: "Los músculos son blandos y elásticos. ¡Prueba otra opción!" },
+          { text: "LAS UÑAS", picto: "💅", correct: false, feedback: "Las uñas protegen las puntas de los dedos. ¡Busca los huesos!" }
+        ]
+      },
+      {
+        blockId: 3,
+        blockName: "3. Sentidos, Nervioso y Locomotor",
+        questionPictogram: "💪 🏃‍♂️ 🤸‍♀️",
+        questionText: "¿Qué partes BLANDAS y elásticas se estiran para MOVER los huesos?",
+        voiceText: "Bloque 3. Pregunta 14. ¿Qué partes blandas y elásticas se estiran para mover los huesos?",
+        hint: "Hacen fuerza cuando corres, saltas y tiras de algo.",
+        options: [
+          { text: "LOS MÚSCULOS", picto: "💪", correct: true, feedback: "¡Genial! Músculos y huesos trabajan juntos en el aparato locomotor." },
+          { text: "LOS CABELLOS", picto: "💇‍♂️", correct: false, feedback: "El pelo decora la cabeza pero no mueve los huesos. ¡Inténtalo!" },
+          { text: "LOS OJOS", picto: "👀", correct: false, feedback: "Los ojos son para el sentido de la vista. ¡Prueba de nuevo!" }
+        ]
+      },
+      {
+        blockId: 3,
+        blockName: "3. Sentidos, Nervioso y Locomotor",
+        questionPictogram: "🖐️ 🧸 ❄️",
+        questionText: "¿Qué SENTIDO está en toda nuestra PIEL para sentir si algo está frío o suave?",
+        voiceText: "Bloque 3. Pregunta 15. ¿Qué sentido está en toda nuestra piel para sentir si algo está frío o suave?",
+        hint: "Lo sientes cuando acaricias a un peluche o tocas un hielo.",
+        options: [
+          { text: "EL TACTO", picto: "🖐️", correct: true, feedback: "¡Correcto! El sentido del tacto reside en la piel." },
+          { text: "EL OLFATO", picto: "👃", correct: false, feedback: "El olfato huele con la nariz. ¡Prueba otra opción!" },
+          { text: "EL GUSTO", picto: "👅", correct: false, feedback: "El gusto siente los sabores en la lengua. ¡Inténtalo!" }
+        ]
+      },
+
+      // ------------------------------------------------------------------------
+      // BLOQUE 4: APARATO REPRODUCTOR MASCULINO Y FEMENINO (Preguntas 16 a 20)
+      // ------------------------------------------------------------------------
+      {
+        blockId: 4,
+        blockName: "4. Aparato Reproductor",
+        questionPictogram: "👦 ♂️ 🧬",
+        questionText: "¿Cuáles son partes del APARATO REPRODUCTOR MASCULINO (de los niños y hombres)?",
+        voiceText: "Bloque 4. Pregunta 16. ¿Cuáles son partes del aparato reproductor masculino, de los niños y hombres?",
+        hint: "Son órganos externos del cuerpo masculino.",
+        options: [
+          { text: "PENE Y TESTÍCULOS", picto: "♂️", correct: true, feedback: "¡Correcto! El pene y los testículos forman el aparato reproductor masculino." },
+          { text: "ÚTERO Y OVARIOS", picto: "♀️", correct: false, feedback: "Esas partes forman parte del aparato reproductor femenino. ¡Inténtalo!" },
+          { text: "PULMONES Y CORAZÓN", picto: "🫁", correct: false, feedback: "Esos son órganos de la respiración y circulación. ¡Prueba de nuevo!" }
+        ]
+      },
+      {
+        blockId: 4,
+        blockName: "4. Aparato Reproductor",
+        questionPictogram: "👧 ♀️ 🌺",
+        questionText: "¿Cuáles son partes del APARATO REPRODUCTOR FEMENINO (de las niñas y mujeres)?",
+        voiceText: "Bloque 4. Pregunta 17. ¿Cuáles son partes del aparato reproductor femenino, de las niñas y mujeres?",
+        hint: "Incluye la vagina, el útero y los ovarios.",
+        options: [
+          { text: "VAGINA, ÚTERO Y OVARIOS", picto: "♀️", correct: true, feedback: "¡Muy bien! Vagina, útero y ovarios son del aparato femenino." },
+          { text: "PENE Y TESTÍCULOS", picto: "♂️", correct: false, feedback: "Esas son partes del aparato reproductor masculino. ¡Prueba otra vez!" },
+          { text: "ESTÓMAGO E INTESTINOS", picto: "🥪", correct: false, feedback: "Esas son partes del aparato digestivo. ¡Busca el femenino!" }
+        ]
+      },
+      {
+        blockId: 4,
+        blockName: "4. Aparato Reproductor",
+        questionPictogram: "🤰 👶 🏠",
+        questionText: "¿En qué ÓRGANO de la madre crece y se protege el BEBÉ antes de nacer?",
+        voiceText: "Bloque 4. Pregunta 18. ¿En qué órgano de la madre crece y se protege el bebé antes de nacer?",
+        hint: "Es como una cunita caliente dentro del vientre materno.",
+        options: [
+          { text: "EL ÚTERO", picto: "🤰", correct: true, feedback: "¡Excelente! El útero o matriz alberga al bebé durante el embarazo." },
+          { text: "EL ESTÓMAGO", picto: "🫄", correct: false, feedback: "El estómago recibe la comida que digerimos. ¡Inténtalo de nuevo!" },
+          { text: "EL CEREBRO", picto: "🧠", correct: false, feedback: "El cerebro sirve para pensar. ¡Prueba con el útero!" }
+        ]
+      },
+      {
+        blockId: 4,
+        blockName: "4. Aparato Reproductor",
+        questionPictogram: "🩲 🚿 🧼",
+        questionText: "¿Por qué es importante cuidar la HIGIENE de nuestras partes íntimas?",
+        voiceText: "Bloque 4. Pregunta 19. ¿Por qué es importante cuidar la higiene de nuestras partes íntimas?",
+        hint: "Lavarnos con agua y jabón previene infecciones.",
+        options: [
+          { text: "PARA ESTAR SANOS Y LIMPIOS", picto: "🧼✨", correct: true, feedback: "¡Súper! Lavarse con agua y jabón evita gérmenes y picores." },
+          { text: "PARA CORRER MÁS RÁPIDO", picto: "🏃‍♂️", correct: false, feedback: "Para correr rápido entrenamos los músculos. ¡Elige la de estar sanos!" },
+          { text: "NO HACE FALTA LAVARSE", picto: "🚫", correct: false, feedback: "¡Sí es muy importante lavarse todos los días! ¡Prueba otra vez!" }
+        ]
+      },
+      {
+        blockId: 4,
+        blockName: "4. Aparato Reproductor",
+        questionPictogram: "🫀 🫁 vs ♂️♀️",
+        questionText: "¿Aparato reproductor MASCULINO y FEMENINO son IGUALES o DIFERENTES?",
+        voiceText: "Bloque 4. Pregunta 20. ¿El aparato reproductor masculino y el femenino son iguales o diferentes?",
+        hint: "Los niños y las niñas tienen órganos reproductores distintos.",
+        options: [
+          { text: "SON DIFERENTES", picto: "👦≠👧", correct: true, feedback: "¡Correcto! Cada cuerpo tiene sus propios órganos reproductores de forma natural." },
+          { text: "SON EXACTAMENTE IGUALES", picto: "👦=👧", correct: false, feedback: "Tienen partes distintas para la función de reproducción. ¡Prueba otra vez!" },
+          { text: "NINGUNO EXISTE", picto: "❌", correct: false, feedback: "¡Sí existen! Forman parte de nuestro cuerpo. ¡Elige diferentes!" }
+        ]
+      },
+
+      // ------------------------------------------------------------------------
+      // BLOQUE 5: HÁBITOS SALUDABLES (Preguntas 21 a 25)
+      // ------------------------------------------------------------------------
+      {
+        blockId: 5,
+        blockName: "5. Hábitos Saludables",
+        questionPictogram: "🥗 🍎 🐟",
+        questionText: "¿Qué comida debemos tomar para tener una DIETA EQUILIBRADA?",
+        voiceText: "Bloque 5. Pregunta 21. ¿Qué comida debemos tomar para tener una dieta equilibrada?",
+        hint: "Comidas variadas como frutas, verduras, pescado y legumbres.",
+        options: [
+          { text: "FRUTA, VERDURA Y PESCADO", picto: "🥗🍎", correct: true, feedback: "¡Fantástico! Comer variado te da súper energía y salud." },
+          { text: "SÓLO PATATAS FRITAS Y CHUCHES", picto: "🍟🍬", correct: false, feedback: "Las chuches en exceso duelen en los dientes y tripa. ¡Prueba de nuevo!" },
+          { text: "SÓLO REFRESCOS Y TARTAS", picto: "🥤🍰", correct: false, feedback: "Tienen demasiado azúcar. ¡Busca la opción saludable!" }
+        ]
+      },
+      {
+        blockId: 5,
+        blockName: "5. Hábitos Saludables",
+        questionPictogram: "🛌 😴 ⏱️",
+        questionText: "¿Cuántas HORAS debemos DORMIR por la noche para descansar bien?",
+        voiceText: "Bloque 5. Pregunta 22. ¿Cuántas horas debemos dormir por la noche para descansar bien?",
+        hint: "Los niños necesitan dormir bastante para crecer sanos.",
+        options: [
+          { text: "ENTRE 9 Y 11 HORAS", picto: "😴🌙", correct: true, feedback: "¡Excelente! Dormir bien recarga el cerebro y el cuerpo." },
+          { text: "SÓLO 2 HORAS", picto: "⏱️", correct: false, feedback: "Con 2 horas estarías muy cansado en el colegio. ¡Prueba otra vez!" },
+          { text: "NO HACE FALTA DORMIR", picto: "👀", correct: false, feedback: "Dormir es vital para descansar la mente y el cuerpo. ¡Inténtalo!" }
+        ]
+      },
+      {
+        blockId: 5,
+        blockName: "5. Hábitos Saludables",
+        questionPictogram: "⚽ 🏊‍♂️ 🚴‍♀️",
+        questionText: "¿Por qué es BUENO hacer EJERCICIO Y DEPORTE casi todos los días?",
+        voiceText: "Bloque 5. Pregunta 23. ¿Por qué es bueno hacer ejercicio y deporte casi todos los días?",
+        hint: "Mueve el corazón, fortalece huesos y músculos.",
+        options: [
+          { text: "FORTALECE CORAZÓN Y MÚSCULOS", picto: "💪❤️", correct: true, feedback: "¡Genial! El deporte llena de energía y fortalece el cuerpo." },
+          { text: "PARA ESTAR SIEMPRE CANSADOS", picto: "🥱", correct: false, feedback: "Al contrario, ¡el deporte nos hace más fuertes! ¡Inténtalo!" },
+          { text: "PARA ROMPER LOS JUGUETES", picto: "🧸❌", correct: false, feedback: "El deporte es para divertirse y cuidar la salud. ¡Busca la correcta!" }
+        ]
+      },
+      {
+        blockId: 5,
+        blockName: "5. Hábitos Saludables",
+        questionPictogram: "🧼 🪥 🧽",
+        questionText: "¿Cuándo debemos LAVARNOS LAS MANOS con agua y jabón?",
+        voiceText: "Bloque 5. Pregunta 24. ¿Cuándo debemos lavarnos las manos con agua y jabón?",
+        hint: "Especialmente antes de comer y después de ir al baño.",
+        options: [
+          { text: "ANTES DE COMER Y TRAS IR AL BAÑO", picto: "🧼🤲", correct: true, feedback: "¡Muy bien! Lavarse las manos elimina gérmenes y bacterias." },
+          { text: "SÓLO UNA VEZ AL AÑO", picto: "📅", correct: false, feedback: "¡Hay que lavárselas varias veces al día! Prueba de nuevo." },
+          { text: "NUNCA HAY QUE LAVARSE", picto: "🦠", correct: false, feedback: "Los gérmenes te enfermarían. ¡Elige la opción higiénica!" }
+        ]
+      },
+      {
+        blockId: 5,
+        blockName: "5. Hábitos Saludables",
+        questionPictogram: "🦷 🪥 🚰",
+        questionText: "¿Qué debemos hacer después de COMER para cuidar los DIENTES?",
+        voiceText: "Bloque 5. Pregunta 25. ¿Qué debemos hacer después de comer para cuidar los dientes?",
+        hint: "Usamos el cepillo con pasta de dientes.",
+        options: [
+          { text: "CEPILLARNOS LOS DIENTES", picto: "🪥🦷", correct: true, feedback: "¡Súper! Lavarse los dientes evita las caries y mantiene la boca limpia." },
+          { text: "COMER MÁS CHUCHES", picto: "🍬", correct: false, feedback: "Las chuches crean caries si no se lavan las bacterias. ¡Prueba otra vez!" },
+          { text: "IRSE A DORMIR SIN LAVAR", picto: "😴", correct: false, feedback: "Lavarse antes de dormir es súper importante. ¡Inténtalo!" }
+        ]
+      }
+    ];
+
+    /* ==========================================================================
+       2. REPRODUCTOR DE SONIDO WEB AUDIO API
+       ========================================================================== */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'success') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
+        osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } else if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+      }
+    }
+
+    /* ==========================================================================
+       3. SÍNTESIS DE VOZ (TEXT-TO-SPEECH) DUA MEJORADA
+       ========================================================================== */
+    function speakText(text, event) {
+      if (event) {
+        event.stopPropagation(); // Evitar disparar clicks indeseados
+      }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Detener cualquier audio previo
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'es-ES';
+        utterance.rate = 0.88; // Velocidad pausada ideal para necesidades DUA
+        utterance.pitch = 1.05;
+        window.speechSynthesis.speak(utterance);
+        gameState.ttsUses++;
+      }
+    }
+
+    function readCurrentQuestion() {
+      const q = questionsDatabase[gameState.currentQuestionIndex];
+      if (q) {
+        speakText(q.voiceText);
+      } else {
+        speakText("¡Bienvenidos a la Aventura del Cuerpo Humano!");
+      }
+    }
+
+    /* ==========================================================================
+       4. PANTALLAS Y NAVEGACIÓN DE LA APLICACIÓN
+       ========================================================================== */
+    window.onload = function() {
+      showWelcomeScreen();
+      document.getElementById('report-date').innerText = new Date().toLocaleDateString('es-ES');
+    };
+
+    function showWelcomeScreen() {
+      document.getElementById('progress-container').classList.add('hidden');
+      const main = document.getElementById('main-content');
+      
+      main.innerHTML = `
+        <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 md:p-8 border-4 border-indigo-400 shadow-2xl max-w-lg w-full text-center bounce-subtle">
+          
+          <div class="inline-block bg-yellow-200 text-yellow-800 p-3 rounded-full text-5xl mb-3 border-2 border-yellow-400 shadow-inner">
+            🦴 🫁 🧠 🥗 👶
+          </div>
+
+          <h2 class="text-3xl font-extrabold text-indigo-900 mb-1">AVENTURA DEL CUERPO</h2>
+          <p class="text-xs font-extrabold text-indigo-600 bg-indigo-50 py-1 px-3 rounded-full inline-block mb-2 border border-indigo-200">
+            25 RETOS INTERACTIVOS CON VOZ Y PICTOGRAMAS
+          </p>
+          <div class="mb-4">
+            <span class="inline-flex items-center gap-1 text-xs font-bold text-slate-700 bg-amber-100 px-3 py-1 rounded-full border border-amber-300 shadow-sm">
+              ✨ Creado por: Carlos H. GO (profesaurio)
+            </span>
+          </div>
+
+          <!-- Input Nombre -->
+          <div class="mb-5 text-left">
+            <label class="block text-slate-700 font-bold mb-2 text-sm flex items-center gap-1">
+              <span>👤</span> Escribe o di tu nombre:
+            </label>
+            <input type="text" id="input-student-name" value="${gameState.studentName !== 'Explorador/a' ? gameState.studentName : 'Explorador/a'}" 
+              class="w-full text-center text-xl font-bold bg-indigo-50 border-3 border-indigo-300 rounded-2xl p-3 text-indigo-900 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all uppercase">
+          </div>
+
+          <!-- Selección de Avatar -->
+          <div class="mb-6">
+            <label class="block text-slate-700 font-bold mb-2 text-sm text-left">
+              <span>🎭</span> Elige tu personaje favorito:
+            </label>
+            <div class="flex justify-center gap-2 flex-wrap">
+              ${['🚀', '🦁', '🦸‍♂️', '🦸‍♀️', '🎨', '🤖'].map(avatar => `
+                <button onclick="selectAvatar('${avatar}')" class="avatar-btn text-3xl p-2.5 bg-slate-100 hover:bg-yellow-200 rounded-2xl border-2 border-slate-300 transition-all active:scale-95 ${avatar === gameState.avatar ? 'bg-yellow-300 border-yellow-500 scale-110 shadow-md' : ''}">
+                  ${avatar}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Botón Comenzar -->
+          <button onclick="startGame()" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-extrabold text-2xl py-4 rounded-2xl shadow-xl border-b-4 border-green-800 active:translate-y-1 transition-all pulse-glow flex items-center justify-center gap-2">
+            <span>¡EMPEZAR LA MISIÓNi!</span> <span>▶️</span>
+          </button>
+
+        </div>
+      `;
+
+      speakText("¡Bienvenidos a la Aventura del Cuerpo Humano! Escribe tu nombre, elige tu personaje y pulsa el botón verde para empezar.");
+    }
+
+    function selectAvatar(avatar) {
+      playSound('click');
+      gameState.avatar = avatar;
+      document.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.classList.remove('bg-yellow-300', 'border-yellow-500', 'scale-110', 'shadow-md');
+        if (btn.innerText.trim() === avatar) {
+          btn.classList.add('bg-yellow-300', 'border-yellow-500', 'scale-110', 'shadow-md');
+        }
+      });
+    }
+
+    function startGame() {
+      playSound('success');
+      const nameInput = document.getElementById('input-student-name').value.trim();
+      if (nameInput) gameState.studentName = nameInput.toUpperCase();
+
+      document.getElementById('header-avatar').innerText = gameState.avatar;
+      document.getElementById('header-student-name').innerHTML = `Explorador/a: <span class="text-indigo-600">${gameState.studentName}</span>`;
+      document.getElementById('progress-container').classList.remove('hidden');
+
+      loadQuestion(0);
+    }
+
+    /* ==========================================================================
+       5. CARGA Y RENDERIZADO DE PREGUNTAS (CON ALTAVOZ EN PREGUNTA Y EN CADA OPCIÓN)
+       ========================================================================== */
+    function loadQuestion(index) {
+      gameState.currentQuestionIndex = index;
+      updateProgressBar();
+
+      const q = questionsDatabase[index];
+      const main = document.getElementById('main-content');
+
+      main.innerHTML = `
+        <div class="w-full max-w-3xl bg-white/95 backdrop-blur-md rounded-3xl p-4 md:p-6 border-4 border-indigo-400 shadow-2xl flex flex-col gap-5">
+          
+          <!-- Encabezado del Bloque + Botón Audio Pregunta -->
+          <div class="flex items-center justify-between gap-2 border-b-2 border-indigo-100 pb-3">
+            <div>
+              <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                ${q.blockName}
+              </span>
+              <h2 id="question-title" class="text-xl md:text-2xl font-extrabold text-indigo-900 mt-1 leading-tight">
+                Pregunta ${index + 1} de 25
+              </h2>
+            </div>
+            
+            <button onclick="speakText('${q.voiceText}', event)" title="Escuchar la pregunta" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-950 p-3 rounded-2xl shadow border-2 border-yellow-500 active:scale-95 transition-all flex items-center justify-center shrink-0">
+              <span class="text-2xl">🔊</span>
+            </button>
+          </div>
+
+          <!-- Pictograma Principal y Enunciado Visual -->
+          <div class="bg-indigo-50/90 rounded-2xl p-4 text-center border-2 border-indigo-200 shadow-inner">
+            <div class="text-5xl md:text-6xl mb-2 bounce-subtle">${q.questionPictogram}</div>
+            <p class="text-base md:text-lg font-bold text-slate-800 leading-snug">${q.questionText}</p>
+          </div>
+
+          <!-- Opciones de Respuesta con Botón de Voz Propio cada una -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            ${q.options.map((option, optIdx) => `
+              <div class="card-interactive bg-white hover:bg-indigo-50 border-4 border-slate-200 hover:border-indigo-400 rounded-2xl p-3 flex flex-col items-center text-center shadow-md justify-between gap-2 min-h-[160px] relative group">
+                
+                <!-- Botón de Audio Individual para esta opción -->
+                <button onclick="speakText('Opción ${optIdx + 1}: ${option.text}', event)" title="Escuchar esta opción" class="absolute top-2 right-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 p-1.5 rounded-xl border border-indigo-300 active:scale-90 transition-all z-10">
+                  <span class="text-lg">🔊</span>
+                </button>
+
+                <!-- Botón de Selección Principal de la Opción -->
+                <button onclick="checkAnswer(${optIdx})" class="w-full h-full flex flex-col items-center justify-between pt-2">
+                  <span class="text-5xl my-auto">${option.picto}</span>
+                  <span class="font-extrabold text-sm md:text-base text-slate-800 leading-tight uppercase mt-2">${option.text}</span>
+                </button>
+
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Banner de Feedback Formativo Activo -->
+          <div id="feedback-box" class="hidden p-4 rounded-2xl border-2 text-center text-sm md:text-base font-bold transition-all"></div>
+
+        </div>
+      `;
+
+      // Autocheck de voz inicial al cargar pregunta
+      speakText(q.voiceText);
+    }
+
+    /* ==========================================================================
+       6. COMPROBACIÓN Y RETROALIMENTACIÓN FORMATIVA DUA
+       ========================================================================== */
+    function checkAnswer(selectedIndex) {
+      const q = questionsDatabase[gameState.currentQuestionIndex];
+      const selectedOption = q.options[selectedIndex];
+      const feedbackBox = document.getElementById('feedback-box');
+      const qRecord = gameState.questionResults[gameState.currentQuestionIndex];
+
+      qRecord.attempts++;
+      gameState.totalAttempts++;
+
+      feedbackBox.classList.remove('hidden', 'bg-green-100', 'border-green-400', 'text-green-900', 'bg-amber-100', 'border-amber-400', 'text-amber-900');
+
+      if (selectedOption.correct) {
+        // ACIERTO
+        playSound('success');
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
+
+        feedbackBox.classList.add('bg-green-100', 'border-green-400', 'text-green-900');
+        feedbackBox.innerHTML = `
+          <div class="text-xl mb-1">🎉 ¡EXCELENTE!</div>
+          <div>${selectedOption.feedback}</div>
+        `;
+
+        speakText("¡Excelente! " + selectedOption.feedback);
+
+        if (!qRecord.completed) {
+          qRecord.completed = true;
+          gameState.stars += 3;
+          gameState.blockScores[q.blockId - 1]++;
+          document.getElementById('star-count').innerText = gameState.stars;
+        }
+
+        // Avanzar automáticamente a la siguiente pregunta
+        setTimeout(() => {
+          if (gameState.currentQuestionIndex < questionsDatabase.length - 1) {
+            loadQuestion(gameState.currentQuestionIndex + 1);
+          } else {
+            showCompletionScreen();
+          }
+        }, 2800);
+
+      } else {
+        // ERROR (Retroalimentación Formativa y Pista)
+        playSound('error');
+        feedbackBox.classList.add('bg-amber-100', 'border-amber-400', 'text-amber-900');
+        feedbackBox.innerHTML = `
+          <div class="text-lg mb-1">💡 ¡PISTA INTELIGENTE!</div>
+          <div>${selectedOption.feedback}</div>
+          <div class="text-xs font-semibold text-amber-800 mt-1">💡 Ayuda: ${q.hint}</div>
+        `;
+
+        speakText(selectedOption.feedback + " Escucha esta pista: " + q.hint);
+      }
+    }
+
+    function updateProgressBar() {
+      const current = gameState.currentQuestionIndex + 1;
+      const total = questionsDatabase.length;
+      const progressPercent = (current / total) * 100;
+
+      const q = questionsDatabase[gameState.currentQuestionIndex];
+      document.getElementById('block-tag').innerText = `BLOQUE ${q.blockId} DE 5`;
+      document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+      document.getElementById('progress-text').innerText = `Pregunta ${current}/${total}`;
+    }
+
+    /* ==========================================================================
+       7. PANTALLA DE FINALIZACIÓN Y PREMIOS GAMIFICADOS
+       ========================================================================== */
+    function showCompletionScreen() {
+      document.getElementById('progress-bar').style.width = `100%`;
+      document.getElementById('progress-text').innerText = `25 / 25 Completadas`;
+      playSound('success');
+
+      confetti({ particleCount: 180, spread: 100, origin: { y: 0.5 } });
+
+      const main = document.getElementById('main-content');
+      main.innerHTML = `
+        <div class="bg-white/95 backdrop-blur-md rounded-3xl p-8 border-4 border-yellow-400 shadow-2xl max-w-lg w-full text-center bounce-subtle">
+          <div class="text-7xl mb-2">🏆</div>
+          <h2 class="text-3xl font-extrabold text-indigo-900 mb-1">¡MISIÓN COMPLETA!</h2>
+          <p class="text-slate-600 font-semibold mb-4 text-sm">Has respondido las 25 preguntas del cuerpo humano.</p>
+
+          <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 mb-6 flex justify-center items-center gap-4">
+            <span class="text-5xl">⭐</span>
+            <div class="text-left">
+              <div class="text-2xl font-extrabold text-amber-800">${gameState.stars} Estrellas</div>
+              <div class="text-xs font-bold text-amber-600">Gran Maestro/a del Cuerpo Humano</div>
+            </div>
+          </div>
+
+          <button onclick="showReportModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xl py-4 rounded-2xl shadow-lg border-b-4 border-emerald-800 active:translate-y-1 transition-all mb-3 flex items-center justify-center gap-2">
+            <span>📋 VER INFORME DE EVALUACIÓN DUA</span>
+          </button>
+
+          <button onclick="location.reload()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-base py-3 rounded-2xl transition-all">
+            🔄 Volver a Jugar
+          </button>
+        </div>
+      `;
+
+      speakText("¡Enhorabuena " + gameState.studentName + "! Has completado con éxito las 25 preguntas del Cuerpo Humano. Haz clic en el botón verde para ver tu informe.");
+    }
+
+    /* ==========================================================================
+       8. GENERADOR DEL INFORME PEDAGÓGICO QUALITATIVO (Decreto 101/2023 Andalucía)
+       ========================================================================== */
+    function showReportModal() {
+      playSound('click');
+
+      document.getElementById('report-student-name').innerText = gameState.studentName;
+      
+      const completedQuestions = gameState.questionResults.filter(q => q.completed).length;
+      document.getElementById('report-score').innerText = completedQuestions;
+      document.getElementById('report-attempts').innerText = gameState.totalAttempts;
+      document.getElementById('report-tts-uses').innerText = gameState.ttsUses;
+
+      // Autonomía calculada
+      let autonomyText = "Alta autonomía lectoescritora y visual";
+      if (gameState.totalAttempts > 35) autonomyText = "Guía puntual requerida";
+      if (gameState.totalAttempts > 50) autonomyText = "Soporte DUA y mediación constante";
+      document.getElementById('report-autonomy').innerText = autonomyText;
+
+      // Dictamen de Consecución del Criterio 2.1
+      const badge = document.getElementById('report-status-badge');
+      if (completedQuestions >= 20) {
+        badge.className = "p-3 rounded-2xl text-center font-bold text-lg border-2 bg-emerald-100 border-emerald-400 text-emerald-900";
+        badge.innerHTML = "✅ CRITERIO 2.1 SUPERADO (Mínimos exigidos alcanzados)";
+      } else if (completedQuestions >= 12) {
+        badge.className = "p-3 rounded-2xl text-center font-bold text-lg border-2 bg-amber-100 border-amber-400 text-amber-900";
+        badge.innerHTML = "⚠️ CRITERIO 2.1 EN PROCESO DE CONSECUCIÓN";
+      } else {
+        badge.className = "p-3 rounded-2xl text-center font-bold text-lg border-2 bg-rose-100 border-rose-400 text-rose-900";
+        badge.innerHTML = "❌ REQUIERE MAYOR ADAPTACIÓN O MEDIACIÓN";
+      }
+
+      // Desglose por los 5 Bloques Temáticos
+      const blockNames = [
+        "1. Las tres funciones vitales",
+        "2. Aparatos de la nutrición y sus partes",
+        "3. 5 sentidos, sistema nervioso y aparato locomotor",
+        "4. Aparato reproductor masculino y femenino",
+        "5. Hábitos saludables (dieta, descanso, ejercicio, higiene)"
+      ];
+
+      const list = document.getElementById('report-blocks-list');
+      list.innerHTML = blockNames.map((name, idx) => {
+        const score = gameState.blockScores[idx];
+        const isPassed = score >= 3;
+        return `
+          <li class="flex justify-between items-center p-2.5 rounded-xl ${isPassed ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}">
+            <span class="font-semibold text-slate-700">${name}</span>
+            <span class="font-bold ${isPassed ? 'text-green-700' : 'text-amber-700'}">
+              ${score} / 5 Aciertos (${isPassed ? 'Conseguido' : 'En Refuerzo'})
+            </span>
+          </li>
+        `;
+      }).join('');
+
+      document.getElementById('report-modal').classList.remove('hidden');
+    }
+
+    function closeReportModal() {
+      playSound('click');
+      document.getElementById('report-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
